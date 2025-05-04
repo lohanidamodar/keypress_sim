@@ -102,7 +102,7 @@ class KeyEmulator {
   factory KeyEmulator() => _instance;
 
   // Constants
-  static const int KEYEVENTF_KEYUP = 0x0002;
+  static const int keyEventFKeyUp = 0x0002;
   static const int _kCGHIDEventTap = 0;
 
   // Windows implementation
@@ -112,17 +112,17 @@ class KeyEmulator {
   // macOS implementation
   late final DynamicLibrary _core;
   late final Pointer<Void> Function(Pointer<Void>, int, int)
-  _CGEventCreateKeyboardEvent;
-  late final void Function(int, Pointer<Void>) _CGEventPost;
-  late final void Function(Pointer<Void>) _CFRelease;
+  _cgEventCreateKeyboardEvent;
+  late final void Function(int, Pointer<Void>) _cgEventPost;
+  late final void Function(Pointer<Void>) _cfRelease;
 
   // Linux implementation
   late final DynamicLibrary _libX11;
   late final DynamicLibrary _libXtst;
-  late final Pointer<Void> Function(Pointer<Utf8>) _XOpenDisplay;
-  late final int Function(Pointer<Void>, int) _XKeysymToKeycode;
-  late final int Function(Pointer<Void>, int, int, int) _XTestFakeKeyEvent;
-  late final void Function(Pointer<Void>) _XFlush;
+  late final Pointer<Void> Function(Pointer<Utf8>) _xOpenDisplay;
+  late final int Function(Pointer<Void>, int) _xKeysymToKeycode;
+  late final int Function(Pointer<Void>, int, int, int) _xTestFakeKeyEvent;
+  late final void Function(Pointer<Void>) _xFlush;
   Pointer<Void>? _display;
 
   // Initialize platform-specific functions
@@ -145,15 +145,15 @@ class KeyEmulator {
 
   void _initMacFunctions() {
     _core = DynamicLibrary.process();
-    _CGEventCreateKeyboardEvent = _core.lookupFunction<
+    _cgEventCreateKeyboardEvent = _core.lookupFunction<
       Pointer<Void> Function(Pointer<Void>, Uint16, Uint8),
       Pointer<Void> Function(Pointer<Void>, int, int)
     >('CGEventCreateKeyboardEvent');
-    _CGEventPost = _core.lookupFunction<
+    _cgEventPost = _core.lookupFunction<
       Void Function(Uint32, Pointer<Void>),
       void Function(int, Pointer<Void>)
     >('CGEventPost');
-    _CFRelease = _core.lookupFunction<
+    _cfRelease = _core.lookupFunction<
       Void Function(Pointer<Void>),
       void Function(Pointer<Void>)
     >('CFRelease');
@@ -178,19 +178,19 @@ class KeyEmulator {
     _libX11 = _loadLibrary('libX11.so', ['libX11.so.6']);
     _libXtst = _loadLibrary('libXtst.so', ['libXtst.so.6']);
 
-    _XOpenDisplay = _libX11.lookupFunction<
+    _xOpenDisplay = _libX11.lookupFunction<
       Pointer<Void> Function(Pointer<Utf8>),
       Pointer<Void> Function(Pointer<Utf8>)
     >('XOpenDisplay');
-    _XKeysymToKeycode = _libX11.lookupFunction<
+    _xKeysymToKeycode = _libX11.lookupFunction<
       Uint8 Function(Pointer<Void>, Uint64),
       int Function(Pointer<Void>, int)
     >('XKeysymToKeycode');
-    _XTestFakeKeyEvent = _libXtst.lookupFunction<
+    _xTestFakeKeyEvent = _libXtst.lookupFunction<
       Int32 Function(Pointer<Void>, Uint32, Int32, Uint64),
       int Function(Pointer<Void>, int, int, int)
     >('XTestFakeKeyEvent');
-    _XFlush = _libX11.lookupFunction<
+    _xFlush = _libX11.lookupFunction<
       Void Function(Pointer<Void>),
       void Function(Pointer<Void>)
     >('XFlush');
@@ -264,7 +264,7 @@ class KeyEmulator {
     input.ref.type = 1; // INPUT_KEYBOARD
     input.ref.wVk = keyCode;
     input.ref.wScan = 0;
-    input.ref.dwFlags = press ? 0 : KEYEVENTF_KEYUP;
+    input.ref.dwFlags = press ? 0 : keyEventFKeyUp;
     input.ref.time = 0;
     input.ref.dwExtraInfo = 0;
 
@@ -275,20 +275,20 @@ class KeyEmulator {
   void _sendMacKey(int keyCode, bool press) {
     if (!Platform.isMacOS) return;
 
-    final event = _CGEventCreateKeyboardEvent(nullptr, keyCode, press ? 1 : 0);
-    _CGEventPost(_kCGHIDEventTap, event);
-    _CFRelease(event); // Release the event to prevent memory leaks
+    final event = _cgEventCreateKeyboardEvent(nullptr, keyCode, press ? 1 : 0);
+    _cgEventPost(_kCGHIDEventTap, event);
+    _cfRelease(event); // Release the event to prevent memory leaks
   }
 
   void _sendLinuxKey(int keyCode, bool press) {
     if (!Platform.isLinux) return;
 
-    _display ??= _XOpenDisplay(nullptr);
+    _display ??= _xOpenDisplay(nullptr);
     if (_display == nullptr) {
       throw UnsupportedError('Could not open X display');
     }
-    _XTestFakeKeyEvent(_display!, keyCode, press ? 1 : 0, 0);
-    _XFlush(_display!);
+    _xTestFakeKeyEvent(_display!, keyCode, press ? 1 : 0, 0);
+    _xFlush(_display!);
   }
 
   // Cleanup method to close X display when done
@@ -387,9 +387,9 @@ class KeyEmulator {
     } else if (Platform.isMacOS) {
       return _macKeyMapping[key]!;
     } else if (Platform.isLinux) {
-      _display ??= _XOpenDisplay(nullptr);
+      _display ??= _xOpenDisplay(nullptr);
       final sym = _linuxKeySymMapping[key]!;
-      return _XKeysymToKeycode(_display!, sym);
+      return _xKeysymToKeycode(_display!, sym);
     }
     throw UnsupportedError('Unsupported platform key mapping');
   }

@@ -1,5 +1,4 @@
 import 'package:keypress_test/keypress.dart';
-import 'dart:io';
 import 'dart:async';
 
 Future<int> calculate() async {
@@ -13,8 +12,8 @@ Future<int> calculate() async {
   // if you need more control over timing parameters
 
   await emul.sendShortcut(
-    Key.keyG,
-    [Key.commandLeft, Key.controlLeft],
+    Key.keyP,
+    [Key.commandLeft, Key.shiftLeft],
     keyPressDuration: Duration(milliseconds: 150),
     delayBetweenKeys: Duration(milliseconds: 70),
   );
