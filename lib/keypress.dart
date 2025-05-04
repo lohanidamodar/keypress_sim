@@ -6,29 +6,29 @@ import 'dart:io';
 import 'package:ffi/ffi.dart';
 
 // Windows FFI types
-typedef _SendInputNative = Uint32 Function(
-    Uint32 nInputs, Pointer<INPUT> pInputs, Int32 cbSize);
-typedef _SendInput = int Function(
-    int nInputs, Pointer<INPUT> pInputs, int cbSize);
+typedef _SendInputNative =
+    Uint32 Function(Uint32 nInputs, Pointer<INPUT> pInputs, Int32 cbSize);
+typedef _SendInput =
+    int Function(int nInputs, Pointer<INPUT> pInputs, int cbSize);
 
 @Packed(1)
 final class INPUT extends Struct {
   @Uint32()
   external int type;
-  
+
   // Use a union to represent the input union in the C struct
   // We only care about keyboard input for this implementation
   @Uint16()
-  external int wVk;     // Virtual-key code
+  external int wVk; // Virtual-key code
   @Uint16()
-  external int wScan;   // Hardware scan code
+  external int wScan; // Hardware scan code
   @Uint32()
   external int dwFlags; // Various flags
   @Uint32()
-  external int time;    // Timestamp
+  external int time; // Timestamp
   @IntPtr()
   external int dwExtraInfo; // Extra info from keybd_event
-  
+
   // Add padding to match the C struct size
   @Uint64()
   external int padding1;
@@ -38,12 +38,61 @@ final class INPUT extends Struct {
 
 /// Common key identifiers across platforms.
 enum Key {
-  keyA, keyB, keyC, keyD, keyE, keyF, keyG, keyH, keyI, keyJ, keyK, keyL, keyM,
-  keyN, keyO, keyP, keyQ, keyR, keyS, keyT, keyU, keyV, keyW, keyX, keyY, keyZ,
-  digit0, digit1, digit2, digit3, digit4, digit5, digit6, digit7, digit8, digit9,
-  enter, escape, space, backspace, tab,
-  shiftLeft, shiftRight, controlLeft, controlRight, altLeft, altRight,
-  arrowLeft, arrowUp, arrowRight, arrowDown,
+  keyA,
+  keyB,
+  keyC,
+  keyD,
+  keyE,
+  keyF,
+  keyG,
+  keyH,
+  keyI,
+  keyJ,
+  keyK,
+  keyL,
+  keyM,
+  keyN,
+  keyO,
+  keyP,
+  keyQ,
+  keyR,
+  keyS,
+  keyT,
+  keyU,
+  keyV,
+  keyW,
+  keyX,
+  keyY,
+  keyZ,
+  digit0,
+  digit1,
+  digit2,
+  digit3,
+  digit4,
+  digit5,
+  digit6,
+  digit7,
+  digit8,
+  digit9,
+  enter,
+  escape,
+  space,
+  backspace,
+  tab,
+  shiftLeft,
+  shiftRight,
+  controlLeft,
+  controlRight,
+  altLeft,
+  altRight,
+  arrowLeft,
+  arrowUp,
+  arrowRight,
+  arrowDown,
+  windowsLeft,
+  windowsRight, // Windows key on Windows, Super key on Linux
+  commandLeft,
+  commandRight, // Command key on macOS
 }
 
 /// A singleton class for sending synthetic key events and typing text.
@@ -51,21 +100,22 @@ class KeyEmulator {
   // Singleton instance
   static final KeyEmulator _instance = KeyEmulator._internal();
   factory KeyEmulator() => _instance;
-  
+
   // Constants
   static const int KEYEVENTF_KEYUP = 0x0002;
   static const int _kCGHIDEventTap = 0;
-  
+
   // Windows implementation
   late final DynamicLibrary _user32;
   late final _SendInput _sendInput;
-  
+
   // macOS implementation
   late final DynamicLibrary _core;
-  late final Pointer<Void> Function(Pointer<Void>, int, int) _CGEventCreateKeyboardEvent;
+  late final Pointer<Void> Function(Pointer<Void>, int, int)
+  _CGEventCreateKeyboardEvent;
   late final void Function(int, Pointer<Void>) _CGEventPost;
   late final void Function(Pointer<Void>) _CFRelease;
-  
+
   // Linux implementation
   late final DynamicLibrary _libX11;
   late final DynamicLibrary _libXtst;
@@ -74,7 +124,7 @@ class KeyEmulator {
   late final int Function(Pointer<Void>, int, int, int) _XTestFakeKeyEvent;
   late final void Function(Pointer<Void>) _XFlush;
   Pointer<Void>? _display;
-  
+
   // Initialize platform-specific functions
   KeyEmulator._internal() {
     if (Platform.isWindows) {
@@ -85,31 +135,30 @@ class KeyEmulator {
       _initLinuxFunctions();
     }
   }
-  
+
   void _initWindowsFunctions() {
     _user32 = DynamicLibrary.open('user32.dll');
-    _sendInput = _user32.lookupFunction<_SendInputNative, _SendInput>('SendInput');
+    _sendInput = _user32.lookupFunction<_SendInputNative, _SendInput>(
+      'SendInput',
+    );
   }
-  
+
   void _initMacFunctions() {
     _core = DynamicLibrary.process();
     _CGEventCreateKeyboardEvent = _core.lookupFunction<
-        Pointer<Void> Function(Pointer<Void>, Uint16, Uint8),
-        Pointer<Void> Function(Pointer<Void>, int, int)>(
-      'CGEventCreateKeyboardEvent',
-    );
+      Pointer<Void> Function(Pointer<Void>, Uint16, Uint8),
+      Pointer<Void> Function(Pointer<Void>, int, int)
+    >('CGEventCreateKeyboardEvent');
     _CGEventPost = _core.lookupFunction<
-        Void Function(Uint32, Pointer<Void>), 
-        void Function(int, Pointer<Void>)>(
-      'CGEventPost',
-    );
+      Void Function(Uint32, Pointer<Void>),
+      void Function(int, Pointer<Void>)
+    >('CGEventPost');
     _CFRelease = _core.lookupFunction<
-        Void Function(Pointer<Void>), 
-        void Function(Pointer<Void>)>(
-      'CFRelease',
-    );
+      Void Function(Pointer<Void>),
+      void Function(Pointer<Void>)
+    >('CFRelease');
   }
-  
+
   DynamicLibrary _loadLibrary(String name, List<String> alternatives) {
     try {
       return DynamicLibrary.open(name);
@@ -124,23 +173,27 @@ class KeyEmulator {
       throw UnsupportedError('Failed to load library: $name');
     }
   }
-  
+
   void _initLinuxFunctions() {
     _libX11 = _loadLibrary('libX11.so', ['libX11.so.6']);
     _libXtst = _loadLibrary('libXtst.so', ['libXtst.so.6']);
-    
+
     _XOpenDisplay = _libX11.lookupFunction<
-        Pointer<Void> Function(Pointer<Utf8>),
-        Pointer<Void> Function(Pointer<Utf8>)>('XOpenDisplay');
+      Pointer<Void> Function(Pointer<Utf8>),
+      Pointer<Void> Function(Pointer<Utf8>)
+    >('XOpenDisplay');
     _XKeysymToKeycode = _libX11.lookupFunction<
-        Uint8 Function(Pointer<Void>, Uint64),
-        int Function(Pointer<Void>, int)>('XKeysymToKeycode');
+      Uint8 Function(Pointer<Void>, Uint64),
+      int Function(Pointer<Void>, int)
+    >('XKeysymToKeycode');
     _XTestFakeKeyEvent = _libXtst.lookupFunction<
-        Int32 Function(Pointer<Void>, Uint32, Int32, Uint64),
-        int Function(Pointer<Void>, int, int, int)>('XTestFakeKeyEvent');
+      Int32 Function(Pointer<Void>, Uint32, Int32, Uint64),
+      int Function(Pointer<Void>, int, int, int)
+    >('XTestFakeKeyEvent');
     _XFlush = _libX11.lookupFunction<
-        Void Function(Pointer<Void>), 
-        void Function(Pointer<Void>)>('XFlush');
+      Void Function(Pointer<Void>),
+      void Function(Pointer<Void>)
+    >('XFlush');
   }
 
   /// Send a key event by [Key].
@@ -206,7 +259,7 @@ class KeyEmulator {
 
   void _sendWindowsKey(int keyCode, bool press) {
     if (!Platform.isWindows) return;
-    
+
     final input = calloc<INPUT>();
     input.ref.type = 1; // INPUT_KEYBOARD
     input.ref.wVk = keyCode;
@@ -221,7 +274,7 @@ class KeyEmulator {
 
   void _sendMacKey(int keyCode, bool press) {
     if (!Platform.isMacOS) return;
-    
+
     final event = _CGEventCreateKeyboardEvent(nullptr, keyCode, press ? 1 : 0);
     _CGEventPost(_kCGHIDEventTap, event);
     _CFRelease(event); // Release the event to prevent memory leaks
@@ -229,7 +282,7 @@ class KeyEmulator {
 
   void _sendLinuxKey(int keyCode, bool press) {
     if (!Platform.isLinux) return;
-    
+
     _display ??= _XOpenDisplay(nullptr);
     if (_display == nullptr) {
       throw UnsupportedError('Could not open X display');
@@ -242,8 +295,9 @@ class KeyEmulator {
   void dispose() {
     if (Platform.isLinux && _display != null && _display != nullptr) {
       final closeDisplay = _libX11.lookupFunction<
-          Void Function(Pointer<Void>), 
-          void Function(Pointer<Void>)>('XCloseDisplay');
+        Void Function(Pointer<Void>),
+        void Function(Pointer<Void>)
+      >('XCloseDisplay');
       closeDisplay(_display!);
       _display = null;
     }
@@ -268,6 +322,9 @@ class KeyEmulator {
     Key.altLeft: 0xA4, Key.altRight: 0xA5,
     Key.arrowLeft: 0x25, Key.arrowUp: 0x26,
     Key.arrowRight: 0x27, Key.arrowDown: 0x28,
+    Key.windowsLeft: 0x5B, Key.windowsRight: 0x5C, // Windows keys
+    Key.commandLeft: 0x5B,
+    Key.commandRight: 0x5C, // Map Command to Windows keys
   };
 
   static const Map<Key, int> _macKeyMapping = {
@@ -275,7 +332,7 @@ class KeyEmulator {
     Key.keyH: 0x04, Key.keyG: 0x05, Key.keyZ: 0x06, Key.keyX: 0x07,
     Key.keyC: 0x08, Key.keyV: 0x09, Key.keyB: 0x0B, Key.keyQ: 0x0C,
     Key.keyW: 0x0D, Key.keyE: 0x0E, Key.keyR: 0x0F, Key.keyY: 0x10,
-    Key.keyT: 0x11, Key.keyI: 0x22, Key.keyJ: 0x26, Key.keyK: 0x28, 
+    Key.keyT: 0x11, Key.keyI: 0x22, Key.keyJ: 0x26, Key.keyK: 0x28,
     Key.keyL: 0x25, Key.keyM: 0x2E, Key.keyN: 0x2D, Key.keyO: 0x1F,
     Key.keyP: 0x23, Key.keyU: 0x20,
     Key.digit1: 0x12, Key.digit2: 0x13, Key.digit3: 0x14, Key.digit4: 0x15,
@@ -288,6 +345,10 @@ class KeyEmulator {
     Key.altLeft: 0x3A, Key.altRight: 0x3D,
     Key.arrowLeft: 0x7B, Key.arrowUp: 0x7E,
     Key.arrowRight: 0x7C, Key.arrowDown: 0x7D,
+    Key.commandLeft: 0x37,
+    Key.commandRight: 0x36, // Command keys (macOS specific)
+    Key.windowsLeft: 0x37,
+    Key.windowsRight: 0x36, // Map Windows keys to Command keys on macOS
   };
 
   static const Map<Key, int> _linuxKeySymMapping = {
@@ -298,8 +359,14 @@ class KeyEmulator {
     Key.keyQ: 0x0071, Key.keyR: 0x0072, Key.keyS: 0x0073, Key.keyT: 0x0074,
     Key.keyU: 0x0075, Key.keyV: 0x0076, Key.keyW: 0x0077, Key.keyX: 0x0078,
     Key.keyY: 0x0079, Key.keyZ: 0x007A,
-    Key.digit0: 0x0030, Key.digit1: 0x0031, Key.digit2: 0x0032, Key.digit3: 0x0033,
-    Key.digit4: 0x0034, Key.digit5: 0x0035, Key.digit6: 0x0036, Key.digit7: 0x0037,
+    Key.digit0: 0x0030,
+    Key.digit1: 0x0031,
+    Key.digit2: 0x0032,
+    Key.digit3: 0x0033,
+    Key.digit4: 0x0034,
+    Key.digit5: 0x0035,
+    Key.digit6: 0x0036,
+    Key.digit7: 0x0037,
     Key.digit8: 0x0038, Key.digit9: 0x0039,
     Key.enter: 0xFF0D, Key.escape: 0xFF1B, Key.space: 0x0020,
     Key.backspace: 0xFF08, Key.tab: 0xFF09,
@@ -308,6 +375,10 @@ class KeyEmulator {
     Key.altLeft: 0xFFE9, Key.altRight: 0xFFEA,
     Key.arrowLeft: 0xFF51, Key.arrowUp: 0xFF52,
     Key.arrowRight: 0xFF53, Key.arrowDown: 0xFF54,
+    Key.windowsLeft: 0xFFEB,
+    Key.windowsRight: 0xFFEC, // Super/Windows keys in X11
+    Key.commandLeft: 0xFFEB,
+    Key.commandRight: 0xFFEC, // Map Command keys to Super keys in Linux
   };
 
   int _getKeyCode(Key key) {
@@ -321,5 +392,52 @@ class KeyEmulator {
       return _XKeysymToKeycode(_display!, sym);
     }
     throw UnsupportedError('Unsupported platform key mapping');
+  }
+
+  /// Sends a keyboard shortcut with multiple modifier keys in a way that ensures
+  /// proper recognition by the operating system.
+  ///
+  /// [modifiers] should be provided in the order they should be pressed.
+  /// The modifiers are released in reverse order after the [mainKey] is pressed.
+  Future<void> sendShortcut(
+    Key mainKey,
+    List<Key> modifiers, {
+    Duration keyPressDuration = const Duration(milliseconds: 100),
+    Duration delayBetweenKeys = const Duration(milliseconds: 50),
+    Duration finalDelay = const Duration(milliseconds: 200),
+  }) async {
+    try {
+      // Press all modifier keys with brief delays between them
+      for (final modifier in modifiers) {
+        sendKeyByKey(modifier, press: true);
+        await Future.delayed(delayBetweenKeys);
+      }
+
+      // Press and hold the main key briefly
+      sendKeyByKey(mainKey, press: true);
+      await Future.delayed(keyPressDuration);
+      sendKeyByKey(mainKey, press: false);
+      await Future.delayed(delayBetweenKeys);
+
+      // Release modifier keys in reverse order
+      for (final modifier in modifiers.reversed) {
+        sendKeyByKey(modifier, press: false);
+        await Future.delayed(delayBetweenKeys);
+      }
+
+      // Final delay to let the system process the entire shortcut
+      await Future.delayed(finalDelay);
+    } catch (e) {
+      // Make sure all keys are released in case of an error
+      for (final modifier in modifiers) {
+        try {
+          sendKeyByKey(modifier, press: false);
+        } catch (_) {}
+      }
+      try {
+        sendKeyByKey(mainKey, press: false);
+      } catch (_) {}
+      rethrow;
+    }
   }
 }
