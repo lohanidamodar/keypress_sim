@@ -3,12 +3,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('KeyEmulator', () {
-    late KeyEmulator emulator;
-
-    setUp(() {
-      emulator = KeyEmulator();
-    });
-
     test('KeyEmulator instance is singleton', () {
       final emulator1 = KeyEmulator();
       final emulator2 = KeyEmulator();

@@ -1,6 +1,6 @@
 # keypress_sim
 
-A cross-platform keyboard input simulation package for Dart that works on Windows, macOS, and Linux using Dart ffi.
+A cross-platform keyboard input simulation package for Dart that works on Windows, macOS, and Linux.
 
 ## Features
 
@@ -75,6 +75,22 @@ sudo apt-get install libx11-dev libxtst-dev
 # Fedora
 sudo dnf install libX11-devel libXtst-devel
 ```
+
+## Releasing New Versions
+
+This package uses GitHub Actions for automated publishing to pub.dev. To release a new version:
+
+1. Update the version in `pubspec.yaml`
+2. Update `CHANGELOG.md` with the changes in the new version
+3. Commit your changes
+4. Create and push a new version tag:
+
+```bash
+git tag -a v0.1.1 -m "Release v0.1.1"
+git push origin v0.1.1
+```
+
+This will trigger the GitHub Actions workflow to publish the new version to pub.dev.
 
 ## Contributing
 
