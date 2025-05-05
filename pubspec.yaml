@@ -1,16 +1,27 @@
-name: keypress_test
-description: A sample command-line application.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+name: keypress_sim
+description: A cross-platform keyboard input simulation package for Windows, macOS, and Linux using Dart ffi.
+version: 0.1.0
+repository: https://github.com/lohanidamodar/keypress_sim
+homepage: https://github.com/lohanidamodar/keypress_sim
+issues: https://github.com/lohanidamodar/keypress_sim/issues
 
 environment:
-  sdk: ^3.7.2
+  sdk: '>=3.0.0 <4.0.0'
 
-# Add regular dependencies here.
 dependencies:
-  ffi: ^2.1.4
-  # path: ^1.8.0
+  ffi: ^2.1.0
 
 dev_dependencies:
   lints: ^5.0.0
   test: ^1.24.0
+
+platforms:
+  windows:
+  macos:
+  linux:
+
+topics:
+  - keyboard
+  - input
+  - simulation
+  - ffi

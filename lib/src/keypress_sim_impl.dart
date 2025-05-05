@@ -1,15 +1,16 @@
 // cross_platform_key_emulator.dart
 // A Dart:ffi implementation to emulate key presses on Windows, macOS, and Linux (X11)
+library;
 
 import 'dart:ffi';
 import 'dart:io';
 import 'package:ffi/ffi.dart';
 
 // Windows FFI types
-typedef _SendInputNative =
-    Uint32 Function(Uint32 nInputs, Pointer<INPUT> pInputs, Int32 cbSize);
-typedef _SendInput =
-    int Function(int nInputs, Pointer<INPUT> pInputs, int cbSize);
+typedef _SendInputNative = Uint32 Function(
+    Uint32 nInputs, Pointer<INPUT> pInputs, Int32 cbSize);
+typedef _SendInput = int Function(
+    int nInputs, Pointer<INPUT> pInputs, int cbSize);
 
 @Packed(1)
 final class INPUT extends Struct {
@@ -112,7 +113,7 @@ class KeyEmulator {
   // macOS implementation
   late final DynamicLibrary _core;
   late final Pointer<Void> Function(Pointer<Void>, int, int)
-  _cgEventCreateKeyboardEvent;
+      _cgEventCreateKeyboardEvent;
   late final void Function(int, Pointer<Void>) _cgEventPost;
   late final void Function(Pointer<Void>) _cfRelease;
 
@@ -146,17 +147,13 @@ class KeyEmulator {
   void _initMacFunctions() {
     _core = DynamicLibrary.process();
     _cgEventCreateKeyboardEvent = _core.lookupFunction<
-      Pointer<Void> Function(Pointer<Void>, Uint16, Uint8),
-      Pointer<Void> Function(Pointer<Void>, int, int)
-    >('CGEventCreateKeyboardEvent');
-    _cgEventPost = _core.lookupFunction<
-      Void Function(Uint32, Pointer<Void>),
-      void Function(int, Pointer<Void>)
-    >('CGEventPost');
-    _cfRelease = _core.lookupFunction<
-      Void Function(Pointer<Void>),
-      void Function(Pointer<Void>)
-    >('CFRelease');
+        Pointer<Void> Function(Pointer<Void>, Uint16, Uint8),
+        Pointer<Void> Function(
+            Pointer<Void>, int, int)>('CGEventCreateKeyboardEvent');
+    _cgEventPost = _core.lookupFunction<Void Function(Uint32, Pointer<Void>),
+        void Function(int, Pointer<Void>)>('CGEventPost');
+    _cfRelease = _core.lookupFunction<Void Function(Pointer<Void>),
+        void Function(Pointer<Void>)>('CFRelease');
   }
 
   DynamicLibrary _loadLibrary(String name, List<String> alternatives) {
@@ -179,21 +176,16 @@ class KeyEmulator {
     _libXtst = _loadLibrary('libXtst.so', ['libXtst.so.6']);
 
     _xOpenDisplay = _libX11.lookupFunction<
-      Pointer<Void> Function(Pointer<Utf8>),
-      Pointer<Void> Function(Pointer<Utf8>)
-    >('XOpenDisplay');
+        Pointer<Void> Function(Pointer<Utf8>),
+        Pointer<Void> Function(Pointer<Utf8>)>('XOpenDisplay');
     _xKeysymToKeycode = _libX11.lookupFunction<
-      Uint8 Function(Pointer<Void>, Uint64),
-      int Function(Pointer<Void>, int)
-    >('XKeysymToKeycode');
+        Uint8 Function(Pointer<Void>, Uint64),
+        int Function(Pointer<Void>, int)>('XKeysymToKeycode');
     _xTestFakeKeyEvent = _libXtst.lookupFunction<
-      Int32 Function(Pointer<Void>, Uint32, Int32, Uint64),
-      int Function(Pointer<Void>, int, int, int)
-    >('XTestFakeKeyEvent');
-    _xFlush = _libX11.lookupFunction<
-      Void Function(Pointer<Void>),
-      void Function(Pointer<Void>)
-    >('XFlush');
+        Int32 Function(Pointer<Void>, Uint32, Int32, Uint64),
+        int Function(Pointer<Void>, int, int, int)>('XTestFakeKeyEvent');
+    _xFlush = _libX11.lookupFunction<Void Function(Pointer<Void>),
+        void Function(Pointer<Void>)>('XFlush');
   }
 
   /// Send a key event by [Key].
@@ -294,10 +286,8 @@ class KeyEmulator {
   // Cleanup method to close X display when done
   void dispose() {
     if (Platform.isLinux && _display != null && _display != nullptr) {
-      final closeDisplay = _libX11.lookupFunction<
-        Void Function(Pointer<Void>),
-        void Function(Pointer<Void>)
-      >('XCloseDisplay');
+      final closeDisplay = _libX11.lookupFunction<Void Function(Pointer<Void>),
+          void Function(Pointer<Void>)>('XCloseDisplay');
       closeDisplay(_display!);
       _display = null;
     }
