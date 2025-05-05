@@ -16,6 +16,10 @@ jobs:
       image: dart:latest
     steps:
       - uses: actions/checkout@v1
+      - name: Install X11 dependencies
+        run: |
+          apt-get update
+          apt-get install -y libx11-dev libxtst-dev
       - name: Install dependencies
         run: dart pub get
       - name: Test
