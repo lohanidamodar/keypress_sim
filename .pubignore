@@ -1,0 +1,6 @@
+# Configure pub.dev authentication using GitHub Actions
+# This will allow GitHub Actions to publish the package to pub.dev on your behalf
+
+repository:
+  homepage: https://github.com/yourusername/keypress_sim
+  provider: github
